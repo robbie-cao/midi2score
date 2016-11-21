@@ -213,75 +213,75 @@ enum {
  * Control Numbers for 0xBn
  */
 typedef enum {
-	/* Coarse Control */
-	MIDI_CTRL_BANK_SELECT      		= 0x00,
-	MIDI_CTRL_MODULATION_WHEEL 		= 0x01,
-	MIDI_CTRL_BREATH           		= 0x02,
-	MIDI_CTRL_FOOT_PEDAL       		= 0x04,
-	MIDI_CTRL_PORTAMENTO_TIME  		= 0x05,
-	MIDI_CTRL_DATA_ENTRY       		= 0x06,
-	MIDI_CTRL_VOLUME           		= 0x07,
-	MIDI_CTRL_BALANCE          		= 0x08,
-	MIDI_CTRL_PAN_POSITION     		= 0x0A,
-	MIDI_CTRL_EXPRESSION       		= 0x0B,
-	MIDI_CTRL_EFFECT_1         		= 0x0C,
-	MIDI_CTRL_EFFECT_2         		= 0x0D,
-	MIDI_CTRL_GENERAL_1        		= 0x10,
-	MIDI_CTRL_GENERAL_2        		= 0x11,
-	MIDI_CTRL_GENERAL_3        		= 0x12,
-	MIDI_CTRL_GENERAL_4        		= 0x13,
+    /* Coarse Control */
+    MIDI_CTRL_BANK_SELECT           = 0x00,
+    MIDI_CTRL_MODULATION_WHEEL      = 0x01,
+    MIDI_CTRL_BREATH                = 0x02,
+    MIDI_CTRL_FOOT_PEDAL            = 0x04,
+    MIDI_CTRL_PORTAMENTO_TIME       = 0x05,
+    MIDI_CTRL_DATA_ENTRY            = 0x06,
+    MIDI_CTRL_VOLUME                = 0x07,
+    MIDI_CTRL_BALANCE               = 0x08,
+    MIDI_CTRL_PAN_POSITION          = 0x0A,
+    MIDI_CTRL_EXPRESSION            = 0x0B,
+    MIDI_CTRL_EFFECT_1              = 0x0C,
+    MIDI_CTRL_EFFECT_2              = 0x0D,
+    MIDI_CTRL_GENERAL_1             = 0x10,
+    MIDI_CTRL_GENERAL_2             = 0x11,
+    MIDI_CTRL_GENERAL_3             = 0x12,
+    MIDI_CTRL_GENERAL_4             = 0x13,
 
-	/* Fine Control */
-	// 0x20 to 0x2D: Same Control as 0x00-0x0D but with fine params
+    /* Fine Control */
+    // 0x20 to 0x2D: Same Control as 0x00-0x0D but with fine params
 
-	/* Pedal On/Off Control */
-	MIDI_CTRL_HOLD_PEDAL      		= 0x40,
-	MIDI_CTRL_PORTAMENTO      		= 0x41,
-	MIDI_CTRL_SOSTENUTO_PEDAL 		= 0x42,
-	MIDI_CTRL_SOFT_PEDAL      		= 0x43,
-	MIDI_CTRL_LEGATO_PEDAL    		= 0x44,
-	MIDI_CTRL_HOLD_2_PEDAL    		= 0x45,
+    /* Pedal On/Off Control */
+    MIDI_CTRL_HOLD_PEDAL            = 0x40,
+    MIDI_CTRL_PORTAMENTO            = 0x41,
+    MIDI_CTRL_SOSTENUTO_PEDAL       = 0x42,
+    MIDI_CTRL_SOFT_PEDAL            = 0x43,
+    MIDI_CTRL_LEGATO_PEDAL          = 0x44,
+    MIDI_CTRL_HOLD_2_PEDAL          = 0x45,
 
-	/* Sound Control */
-	MIDI_CTRL_SOUND_VARIATION    	= 0x46,
-	MIDI_CTRL_SOUND_TIMBRE       	= 0x47,
-	MIDI_CTRL_SOUND_RELEASE_TIME 	= 0x48,
-	MIDI_CTRL_SOUND_ATTACK_TIME  	= 0x49,
-	MIDI_CTRL_SOUND_BRIGHTNESS   	= 0x4A,
-	MIDI_CTRL_SOUND_CONTROL_6    	= 0x4B,
-	MIDI_CTRL_SOUND_CONTROL_7    	= 0x4C,
-	MIDI_CTRL_SOUND_CONTROL_8    	= 0x4D,
-	MIDI_CTRL_SOUND_CONTROL_9    	= 0x4E,
-	MIDI_CTRL_SOUND_CONTROL_10   	= 0x4F,
+    /* Sound Control */
+    MIDI_CTRL_SOUND_VARIATION       = 0x46,
+    MIDI_CTRL_SOUND_TIMBRE          = 0x47,
+    MIDI_CTRL_SOUND_RELEASE_TIME    = 0x48,
+    MIDI_CTRL_SOUND_ATTACK_TIME     = 0x49,
+    MIDI_CTRL_SOUND_BRIGHTNESS      = 0x4A,
+    MIDI_CTRL_SOUND_CONTROL_6       = 0x4B,
+    MIDI_CTRL_SOUND_CONTROL_7       = 0x4C,
+    MIDI_CTRL_SOUND_CONTROL_8       = 0x4D,
+    MIDI_CTRL_SOUND_CONTROL_9       = 0x4E,
+    MIDI_CTRL_SOUND_CONTROL_10      = 0x4F,
 
-	/* Button Control */
-	MIDI_CTRL_GENERAL_BUTTON_1 		= 0x50,
-	MIDI_CTRL_GENERAL_BUTTON_2 		= 0x51,
-	MIDI_CTRL_GENERAL_BUTTON_3 		= 0x52,
-	MIDI_CTRL_GENERAL_BUTTON_4 		= 0x5e,
+    /* Button Control */
+    MIDI_CTRL_GENERAL_BUTTON_1      = 0x50,
+    MIDI_CTRL_GENERAL_BUTTON_2      = 0x51,
+    MIDI_CTRL_GENERAL_BUTTON_3      = 0x52,
+    MIDI_CTRL_GENERAL_BUTTON_4      = 0x5e,
 
-	/* Level Control */
-	MIDI_CTRL_EFFECTS_LEVEL 			= 0x5B,
-	MIDI_CTRL_TREMULO_LEVEL 			= 0x5C,
-	MIDI_CTRL_CHORUS_LEVEL  			= 0x5D,
-	MIDI_CTRL_CELESTE_LEVEL 			= 0x5E,
-	MIDI_CTRL_PHASER_LEVEL  			= 0x5F,
+    /* Level Control */
+    MIDI_CTRL_EFFECTS_LEVEL         = 0x5B,
+    MIDI_CTRL_TREMULO_LEVEL         = 0x5C,
+    MIDI_CTRL_CHORUS_LEVEL          = 0x5D,
+    MIDI_CTRL_CELESTE_LEVEL         = 0x5E,
+    MIDI_CTRL_PHASER_LEVEL          = 0x5F,
 
-	MIDI_CTRL_DATA_BUTTON_INC      	= 0x60,
-	MIDI_CTRL_DATA_BUTTON_DEC      	= 0x61,
-	MIDI_CTRL_NON_REG_PARAM_FINE   	= 0x62,
-	MIDI_CTRL_NON_REG_PARAM_COARSE 	= 0x63,
-	MIDI_CTRL_REG_PARAM_FINE       	= 0x64,
-	MIDI_CTRL_REG_PARAM_COARSE     	= 0x65,
+    MIDI_CTRL_DATA_BUTTON_INC       = 0x60,
+    MIDI_CTRL_DATA_BUTTON_DEC       = 0x61,
+    MIDI_CTRL_NON_REG_PARAM_FINE    = 0x62,
+    MIDI_CTRL_NON_REG_PARAM_COARSE  = 0x63,
+    MIDI_CTRL_REG_PARAM_FINE        = 0x64,
+    MIDI_CTRL_REG_PARAM_COARSE      = 0x65,
 
-	MIDI_CTRL_ALL_SOUND_OFF       	= 0x78,
-	MIDI_CTRL_ALL_CONTROLLERS_OFF 	= 0x79,
-	MIDI_CTRL_LOCAL_KEYBOARD      	= 0x7A,
-	MIDI_CTRL_ALL_NOTES_OFF       	= 0x7B,
-	MIDI_CTRL_OMNI_MODE_OFF       	= 0x7C,
-	MIDI_CTRL_OMNI_MODE_ON        	= 0x7D,
-	MIDI_CTRL_MONO_OPERATION      	= 0x7E,
-	MIDI_CTRL_POLY_OPERATION      	= 0x7F,
+    MIDI_CTRL_ALL_SOUND_OFF         = 0x78,
+    MIDI_CTRL_ALL_CONTROLLERS_OFF   = 0x79,
+    MIDI_CTRL_LOCAL_KEYBOARD        = 0x7A,
+    MIDI_CTRL_ALL_NOTES_OFF         = 0x7B,
+    MIDI_CTRL_OMNI_MODE_OFF         = 0x7C,
+    MIDI_CTRL_OMNI_MODE_ON          = 0x7D,
+    MIDI_CTRL_MONO_OPERATION        = 0x7E,
+    MIDI_CTRL_POLY_OPERATION        = 0x7F,
 } ControllerType;
 
 #endif

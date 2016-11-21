@@ -14,19 +14,24 @@ static struct {
     const char * part;
     const char * suffix;
 } track_map[] = {
-    { .part = "PART GUITAR",
+    {
+        .part = "PART GUITAR",
         .suffix = ".guitar",
     },
-    { .part = "BEAT",
+    {
+        .part = "BEAT",
         .suffix = ".beat",
     },
-    { .part = "PART VOCALS",
+    {
+        .part = "PART VOCALS",
         .suffix = ".vocals",
     },
-    { .part = "PART BASS",
+    {
+        .part = "PART BASS",
         .suffix = ".bass",
     },
-    { .part = "PART DRUMS",
+    {
+        .part = "PART DRUMS",
         .suffix = ".drums",
     },
 
@@ -75,13 +80,13 @@ static inline int do_midi_thing(char * midi_file)
     // Find the maximum length of all the filename suffixes.
     unsigned int max_suffix_len = 0;
 
-    for (int i = 0; track_map[i].part != NULL; ++i)
-        if (strlen(track_map[i].suffix) > max_suffix_len)
+    for (int i = 0; track_map[i].part != NULL; ++i) {
+        if (strlen(track_map[i].suffix) > max_suffix_len) {
             max_suffix_len = strlen(track_map[i].suffix);
-
+        }
+    }
 
     char * partfile = malloc(strlen(midi_file) + max_suffix_len + 1);
-
 
     for (int i = 0; track_map[i].part != NULL; ++i) {
         midi_track_t * trk = find_track(midi, track_map[i].part);
@@ -111,21 +116,20 @@ static inline int do_midi_thing(char * midi_file)
     midi_close(midi);
 
     return retn;
-
 }
 
 static inline char * part_filename(char const * str, const char * file, const char * suffix)
 {
     strncpy((char *)str, (char *)file, strlen(file) + 1);
     strncat((char *)str, (char *)suffix, strlen(suffix) + 1);
+
     return (char*)str;
 }
 
 static inline int output_track(midi_track_t * const trk, char* fname)
 {
-
-    // printf("Track %d, %d events, %u bytes, sig: %c%c%c%c\n", trk->num, trk->events, trk->hdr.size,
-    //      trk->hdr.magic[0], trk->hdr.magic[1], trk->hdr.magic[2], trk->hdr.magic[3]);
+    printf("Track %d, %d events, %u bytes, sig: %c%c%c%c\n", trk->num, trk->events, trk->hdr.size,
+            trk->hdr.magic[0], trk->hdr.magic[1], trk->hdr.magic[2], trk->hdr.magic[3]);
 
     FILE * file = fopen(fname, "w+");
 
@@ -145,9 +149,9 @@ static inline int output_track(midi_track_t * const trk, char* fname)
             absolute += cur->delta_time;
             midi_event_t * event = cur;
 
-            if (event->cmd == MIDI_EVENT_NOTE_ON || event->cmd == MIDI_EVENT_NOTE_OFF)
+            if (event->cmd == MIDI_EVENT_NOTE_ON || event->cmd == MIDI_EVENT_NOTE_OFF) {
                 fprintf(file, "%lu,%u,%u\n", absolute, event->data[0],event->data[1]);
-
+            }
         } else if (cur->type == MIDI_EVENT_TYPE_META) {
             absolute += cur->delta_time;
         }
@@ -181,8 +185,9 @@ static inline int output_time(midi_t * const midi, char * fname)
         midi_event_t * cur = midi_track_next(trk);
         absolute += cur->delta_time;
 
-        if (cur->type == MIDI_EVENT_TYPE_META && cur->cmd == 0x58)
-            fprintf(file, "%lu,%u,%u\n", absolute,cur->data[0], cur->data[1]);
+        if (cur->type == MIDI_EVENT_TYPE_META && cur->cmd == MIDI_META_TIME_SIGNATURE) {
+            fprintf(file, "%lu, %u, %u\n", absolute, cur->data[0], cur->data[1]);
+        }
     }
 
     midi_free_track(trk);
@@ -201,29 +206,31 @@ static inline midi_track_t * find_track(midi_t * midi, const char * part)
     for (int i = 0; i < midi->hdr.tracks; ++i) {
         track =  midi_get_track(midi, i);
 
-
-        // printf("Track %d, %d events, %u bytes, sig: %c%c%c%c\n", track->num, track->events, track->hdr.size,
-        //      track->hdr.magic[0], track->hdr.magic[1], track->hdr.magic[2], track->hdr.magic[3]);
+        printf("Track %d, %d events, %u bytes, sig: %c%c%c%c\n",
+                track->num, track->events, track->hdr.size,
+                track->hdr.magic[0], track->hdr.magic[1], track->hdr.magic[2], track->hdr.magic[3]);
 
         midi_iter_track(track);
         midi_event_t * evnt;
         while (midi_track_has_next(track)) {
             evnt = midi_track_next(track);
 
-            if (evnt->delta_time != 0)
+            if (evnt->delta_time != 0) {
                 break;
-            //0x03 = track name :D
-            if (evnt->type != MIDI_EVENT_TYPE_META || evnt->cmd != 0x03)
+            }
+            // 0x03 = track name
+            if (evnt->type != MIDI_EVENT_TYPE_META || evnt->cmd != MIDI_META_SEQUENCE_NAME) {
                 continue;
+            }
 
-            if (evnt->size == strlen(part)
-                    &&  !strncmp((const char *)evnt->data, part, evnt->size)) {
+            if (evnt->size == strlen(part) && !strncmp((const char *)evnt->data, part, evnt->size)) {
                 return track;
             }
         }
 
-        if (track != NULL)
+        if (track != NULL) {
             midi_free_track(track);
+        }
     }
 
     return NULL;
