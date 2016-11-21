@@ -58,7 +58,7 @@ int midi_open(const char *const midi_file, midi_t **midi) {
             return EINVAL;
         } else {
             //just in case there are additional bytes in the header?
-            status = fseek((*midi)->midi_file, (*midi)->hdr.hsize - (MIDI_HEADER_SIZE - 4 - 4), SEEK_CUR);
+            status = fseek((*midi)->midi_file, (*midi)->hdr.length - (MIDI_HEADER_SIZE - 4 - 4), SEEK_CUR);
 
             if (status != -1) {
                 (*midi)->trk_offset = ftell((*midi)->midi_file);
@@ -156,10 +156,10 @@ static bool midi_parse_hdr(midi_t *const midi) {
 
     if (ret == 1 && midi_check_magic(MIDI_MAGIC, buf, sizeof(MIDI_MAGIC))) {
         memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-        hdr->hsize = btol32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
+        hdr->length = btol32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
         hdr->format = btol16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
         hdr->tracks = btol16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
-        hdr->dd = btol16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
+        hdr->division = btol16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
 
         return true;
     } else {
