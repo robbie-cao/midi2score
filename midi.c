@@ -12,7 +12,7 @@ const uint8_t MIDI_TRACK_MAGIC[]  = { 'M', 'T', 'r', 'k' };
 
 static inline uint16_t btol_16(const uint16_t n)
 {
-    return (n>>8) | (n<<8);
+    return (n >> 8) | (n << 8);
 }
 
 static inline uint32_t btol_32(const uint32_t n)
@@ -42,8 +42,9 @@ static inline uint32_t midi_parse_timedelta(FILE * file, unsigned int * const by
 int midi_open(const char *const midi_file, midi_t **midi)
 {
     FILE *file = NULL;
-    *midi = NULL;
     int status;
+
+    *midi = NULL;
 
     file = fopen(midi_file, "r");
     if (file == NULL) {
@@ -52,28 +53,29 @@ int midi_open(const char *const midi_file, midi_t **midi)
 
     *midi = calloc(sizeof **midi, 1);
 
-    if (*midi != NULL) {
-        (*midi)->midi_file = file;
-
-        if (!midi_parse_hdr(*midi)) {
-            midi_close(*midi);
-
-            return EINVAL;
-        } else {
-            //just in case there are additional bytes in the header?
-            status = fseek((*midi)->midi_file, (*midi)->hdr.length - (MIDI_HEADER_SIZE - 4 - 4), SEEK_CUR);
-
-            if (status != -1) {
-                (*midi)->trk_offset = ftell((*midi)->midi_file);
-                return 0;
-            } else {
-                return errno;
-            }
-        }
-    } else {
+    if (*midi == NULL) {
         fclose(file);
         return ENOMEM;
     }
+
+    (*midi)->midi_file = file;
+
+    if (!midi_parse_hdr(*midi)) {
+        midi_close(*midi);
+
+        return EINVAL;
+    }
+
+    // Just in case there are additional bytes in the header?
+    status = fseek((*midi)->midi_file, (*midi)->hdr.length - (MIDI_HEADER_SIZE - 4 - 4), SEEK_CUR);
+
+    if (status != -1) {
+        (*midi)->trk_offset = ftell((*midi)->midi_file);
+
+        return 0;
+    }
+
+    return errno;
 }
 
 void midi_close(midi_t *midi)
@@ -94,7 +96,7 @@ midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
     int status;
     midi_track_t *track = NULL;
 
-    //TODO
+    // TODO
     status = fseek(midi->midi_file, midi->trk_offset, SEEK_SET);
 
     if (status == -1) {
@@ -106,7 +108,7 @@ midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
 
     for (int i = 0; i < track_idx; ++i) {
         if (midi_parse_track_hdr(midi, &trkhdr)) {
-            //seek past the track.
+            // Seek past the track.
             status = fseek(midi->midi_file, trkhdr.size, SEEK_CUR);
 
             if (status == -1) {
@@ -139,8 +141,9 @@ midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
  */
 void midi_free_track(midi_track_t *trk)
 {
-    if (trk == NULL)
+    if (trk == NULL) {
         return;
+    }
 
     trk->cur = trk->head;
     while (trk->cur != NULL) {
@@ -161,17 +164,21 @@ static bool midi_parse_hdr(midi_t *const midi)
     midi_hdr_t *hdr = &midi->hdr;
     size_t ret = fread(buf, MIDI_HEADER_SIZE, 1, midi->midi_file);
 
-    if (ret == 1 && midi_check_magic(MIDI_HEADER_MAGIC, buf, sizeof(MIDI_HEADER_MAGIC))) {
-        memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-        hdr->length = btol_32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
-        hdr->format = btol_16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
-        hdr->tracks = btol_16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
-        hdr->division = btol_16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
-
-        return true;
-    } else {
+    if (ret != 1) {
         return false;
     }
+
+    if (!midi_check_magic(MIDI_HEADER_MAGIC, buf, sizeof(MIDI_HEADER_MAGIC))) {
+        return false;
+    }
+
+    memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
+    hdr->length   = btol_32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
+    hdr->format   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
+    hdr->tracks   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
+    hdr->division = btol_16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
+
+    return true;
 }
 
 static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr)
@@ -179,21 +186,21 @@ static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr
     uint8_t buf[MIDI_TRACK_HEADER_SIZE] = {0};
     size_t ret = fread(buf, MIDI_TRACK_HEADER_SIZE, 1, midi->midi_file);
 
-    if (ret == 1) {
-        memcpy(&hdr->magic, buf + MIDI_TRACK_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-        hdr->size = btol_32(*(uint32_t*)(buf + MIDI_TRACK_HEADER_SIZE_OFFSET));
-
-        if (midi_check_magic(MIDI_TRACK_MAGIC, hdr->magic, sizeof(MIDI_TRACK_MAGIC))) {
-            return true;
-        } else {
-            midi_set_error((midi_t*)midi, errno, "track has bad magic.");
-            return false;
-        }
-
-    } else {
+    if (ret != 1) {
         midi_set_error((midi_t*)midi, errno, "fread() failed to read track header.");
+
         return false;
     }
+
+    memcpy(&hdr->magic, buf + MIDI_TRACK_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
+    hdr->size = btol_32(*(uint32_t*)(buf + MIDI_TRACK_HEADER_SIZE_OFFSET));
+
+    if (!midi_check_magic(MIDI_TRACK_MAGIC, hdr->magic, sizeof(MIDI_TRACK_MAGIC))) {
+        midi_set_error((midi_t*)midi, errno, "track has bad magic.");
+        return false;
+    }
+
+    return true;
 }
 
 static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk)
@@ -251,14 +258,14 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
     *bytes += fread(&cmdchan, 1, 1, midi->midi_file);
 
-    //0xFF = meta event.
-    ///@TODO split this out into a function for meta / event
+    // 0xFF = meta event.
+    // TODO: split this out into a function for meta / event
     if ( cmdchan == 0xFF )  {
         uint8_t cmd ;
         uint8_t size ;
 
-        //xx, nn, dd = command, length, data...
-        //skip the command.
+        // xx, nn, dd = command, length, data...
+        // Skip the command.
         *bytes += fread(&cmd, 1, 1, midi->midi_file);
         *bytes += fread(&size, 1, 1, midi->midi_file);
 
@@ -339,7 +346,7 @@ static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const byte
         read++;
     } while (more);
 
-    //need read all the bytes first due to endianness
+    // Need read all the bytes first due to endianness
     for (int i = 0; i < read; ++i) {
         td |= tmp[i] << ((read - 1 - i) * 7);
     }
