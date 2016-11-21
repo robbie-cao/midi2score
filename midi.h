@@ -62,8 +62,8 @@
  * | MThd     | <length>        | <format> | <tracks> | <division> |
  * +----------+-----------------+----------+----------+------------+
  *
- * "MThd"   - the literal string MThd, or in hexadecimal notation: 0x4d546864.
- * <length> - length of the header chunk (always 6 bytes long).
+ * "MThd"   - the literal string MThd, or in hexadecimal notation: 0x4d546864
+ * <length> - length of the header chunk (always 6 bytes long)
  * <format> - the midi file format
  *      0 = single track file format
  *      1 = multiple track file format
@@ -81,10 +81,10 @@
  */
 #define MIDI_HEADER_SIZE                14
 #define MIDI_HEADER_MAGIC_OFFSET        0
-#define MIDI_HEADER_HSIZE_OFFSET        4
+#define MIDI_HEADER_LENGTH_OFFSET       4
 #define MIDI_HEADER_FORMAT_OFFSET       8
 #define MIDI_HEADER_TRACKS_OFFSET       10
-#define MIDI_HEADER_DD_OFFSET           12
+#define MIDI_HEADER_DIVISION_OFFSET     12
 
 typedef struct {
     uint8_t     magic[4];
@@ -121,22 +121,18 @@ typedef struct {
     uint32_t    size;
 } midi_track_hdr_t;
 
+enum {
+    MIDI_EVENT_TYPE_EVENT,
+    MIDI_EVENT_TYPE_META
+};
+
 typedef struct {
-    uint32_t    td;
-
-    enum {
-        MIDI_TYPE_EVENT,
-        MIDI_TYPE_META
-    } type;
-
-    uint8_t cmd;
-
-    // Always 0 for meta events.
-    uint8_t chan;
-
-    // Size of data
-    uint8_t size;
-    uint8_t data[];
+    uint32_t    delta_time;
+    uint8_t     type;
+    uint8_t     cmd;
+    uint8_t     chan;       // Always 0 for meta events.
+    uint8_t     size;       // Size of data
+    uint8_t     data[];
 } midi_event_t;
 
 
@@ -192,10 +188,10 @@ int midi_get_errno(const midi_t *const);
 
 #define MIDI_EVENT_NOTE_OFF                 0x08
 #define MIDI_EVENT_NOTE_ON                  0x09
-#define MIDI_EVENT_KEY_AFTER_TOUCH          0x0A
+#define MIDI_EVENT_AFTER_TOUCH              0x0A
 #define MIDI_EVENT_CONTROL_CHANGE           0x0B
-#define MIDI_EVENT_PATH_CHANGE              0x0C
-#define MIDI_EVENT_CHANNEL_AFTER_TOUCH      0x0D
-#define MIDI_EVENT_PITCH_WHEEL_CHANGE       0x0E
+#define MIDI_EVENT_PROGRAM_CHANGE           0x0C
+#define MIDI_EVENT_CHANNEL_PRESSURE         0x0D
+#define MIDI_EVENT_PITCH_WHEEL              0x0E
 
 #endif

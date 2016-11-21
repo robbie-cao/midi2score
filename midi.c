@@ -173,10 +173,10 @@ static bool midi_parse_hdr(midi_t *const midi)
     }
 
     memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-    hdr->length   = btol_32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
+    hdr->length   = btol_32(*(uint32_t*)(buf + MIDI_HEADER_LENGTH_OFFSET));
     hdr->format   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
     hdr->tracks   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
-    hdr->division = btol_16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
+    hdr->division = btol_16(*(uint16_t*)(buf + MIDI_HEADER_DIVISION_OFFSET));
 
     return true;
 }
@@ -250,7 +250,7 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
      */
     static uint8_t running_cmd = 0;
 
-    uint32_t td = midi_parse_timedelta(midi->midi_file, bytes);
+    uint32_t delta_time = midi_parse_timedelta(midi->midi_file, bytes);
 
     midi_event_node_t * node;
 
@@ -260,7 +260,7 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
     // 0xFF = meta event.
     // TODO: split this out into a function for meta / event
-    if ( cmdchan == 0xFF )  {
+    if (cmdchan == 0xFF)  {
         uint8_t cmd ;
         uint8_t size ;
 
@@ -280,31 +280,32 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
         node->event.size = size;
         node->event.cmd = cmd;
-        node->event.td = td;
+        node->event.delta_time = delta_time;
         node->event.chan = 0;
-        node->event.type = MIDI_TYPE_META;
+        node->event.type = MIDI_EVENT_TYPE_META;
 
     } else {
-        uint8_t cmd = (cmdchan>>4)&0x0F;
-        uint8_t chan = cmdchan&0x0F;
+        uint8_t cmd = (cmdchan >> 4) & 0x0F;
+        uint8_t chan = cmdchan & 0x0F;
         uint8_t args[2];
         int argc = 0;
         int argn = 2;
 
-        if ( !(cmd & 0x08) ) {
+        if (!(cmd & 0x08)) {
             cmd = running_cmd;
             args[argc++] = cmdchan;
         } else {
             running_cmd = cmd;
         }
 
-        if ( !(cmd & 0x08) ) {
+        if (!(cmd & 0x08)) {
             midi_set_error((midi_t*)midi, EINVAL, "Invalid command, but none running :(.");
             return NULL;
         }
 
-        if (cmd == 12 || cmd == 13)
+        if (cmd == MIDI_EVENT_PROGRAM_CHANGE || cmd == MIDI_EVENT_CHANNEL_PRESSURE) {
             argn--;
+        }
 
         node = malloc(sizeof(*node) + argn);
         if (node == NULL) {
@@ -312,18 +313,19 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
             return NULL;
         }
 
-        for ( ; argc < argn; ++argc )
+        for ( ; argc < argn; ++argc ) {
             *bytes += fread(&args[argc], 1, 1, midi->midi_file);
+        }
 
-        for (int i = 0; i < argn; ++i)
+        for (int i = 0; i < argn; ++i) {
             node->event.data[i] = args[i];
+        }
 
         node->event.cmd = cmd;
-        node->event.td = td;
+        node->event.delta_time = delta_time;
         node->event.size = (uint8_t)argc;
         node->event.chan = chan;
-        node->event.type = MIDI_TYPE_EVENT;
-
+        node->event.type = MIDI_EVENT_TYPE_EVENT;
     }
 
     node->next = NULL;
@@ -334,26 +336,26 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const bytes)
 {
 
-    uint8_t tmp[4] = {0};
-    uint32_t td = 0;
-
+    uint8_t tmp[4] = { 0 };
+    uint32_t delta_time = 0;
     int read = 0;
     int more;
+
     do {
         fread(&tmp[read], 1, 1, file);
-        more = tmp[read]&0x80;
+        more = tmp[read] & 0x80;
         tmp[read] &= 0x7F;
         read++;
     } while (more);
 
     // Need read all the bytes first due to endianness
     for (int i = 0; i < read; ++i) {
-        td |= tmp[i] << ((read - 1 - i) * 7);
+        delta_time |= tmp[i] << ((read - 1 - i) * 7);
     }
 
     *bytes += read;
 
-    return td;
+    return delta_time;
 }
 
 void midi_printmeta(midi_event_t * meta)
@@ -373,15 +375,15 @@ char *midi_get_eventstr(uint8_t cmd)
         case 0x9:
             return "NoteOn";
         case 0xa:
-            return "KeyAfterTouch";
+            return "AfterTouch";
         case 0xb:
             return "ControlChange";
         case 0xc:
             return "ProgramChange";
         case 0xd:
-            return "ChanAfterTouch";
+            return "ChannelPressure";
         case 0xe:
-            return "PitchWheelChange";
+            return "PitchWheel";
         default:
             return "???";
     }

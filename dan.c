@@ -137,15 +137,15 @@ static inline int output_track(midi_track_t * const trk, char* fname) {
     midi_event_t * cur;
     while ( midi_track_has_next(trk) ) {
         cur = midi_track_next(trk);
-        if ( cur->type == MIDI_TYPE_EVENT) {
-            absolute += cur->td;
+        if ( cur->type == MIDI_EVENT_TYPE_EVENT) {
+            absolute += cur->delta_time;
             midi_event_t * event = cur;
 
             if ( event->cmd == MIDI_EVENT_NOTE_ON || event->cmd == MIDI_EVENT_NOTE_OFF )
                 fprintf(file, "%lu,%u,%u\n", absolute, event->data[0],event->data[1]);
 
-        } else if (cur->type == MIDI_TYPE_META) {
-            absolute += cur->td;
+        } else if (cur->type == MIDI_EVENT_TYPE_META) {
+            absolute += cur->delta_time;
         }
     }
 
@@ -173,9 +173,9 @@ static inline int output_time(midi_t * const midi, char * fname) {
     unsigned long int absolute = 0;
     while ( midi_track_has_next(trk) ) {
         midi_event_t * cur = midi_track_next(trk);
-        absolute += cur->td;
+        absolute += cur->delta_time;
 
-        if ( cur->type == MIDI_TYPE_META && cur->cmd == 0x58 )
+        if ( cur->type == MIDI_EVENT_TYPE_META && cur->cmd == 0x58 )
             fprintf(file, "%lu,%u,%u\n", absolute,cur->data[0], cur->data[1]);
     }
 
@@ -203,10 +203,10 @@ static inline midi_track_t * find_track(midi_t * midi, const char const * part) 
         while ( midi_track_has_next(track) ) {
             evnt = midi_track_next(track);
 
-            if ( evnt->td != 0 )
+            if ( evnt->delta_time != 0 )
                 break;
             //0x03 = track name :D
-            if ( evnt->type != MIDI_TYPE_META || evnt->cmd != 0x03 )
+            if ( evnt->type != MIDI_EVENT_TYPE_META || evnt->cmd != 0x03 )
                 continue;
 
             if ( evnt->size == strlen(part)
