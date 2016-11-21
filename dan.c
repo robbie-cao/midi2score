@@ -40,8 +40,8 @@ static struct {
 static inline int do_midi_thing(char * midi_file);
 static inline int output_track(midi_track_t * const, char * file);
 static inline int output_time(midi_t * const, char * file);
-static inline char * part_filename(char const * str, const char const * file, const char const * suffix);
-static inline midi_track_t * find_track(midi_t * midi, const char const * part);
+static inline char * part_filename(char const * str, const char * file, const char * suffix);
+static inline midi_track_t * find_track(midi_t * midi, const char * part);
 
 int main(int argc, char**argv) {
 
@@ -112,7 +112,7 @@ static inline int do_midi_thing(char * midi_file) {
 
 }
 
-static inline char * part_filename(char const * str, const char const * file, const char const * suffix) {
+static inline char * part_filename(char const * str, const char * file, const char * suffix) {
     strncpy((char *)str, (char *)file, strlen(file)+1);
     strncat((char *)str, (char *)suffix, strlen(suffix)+1);
     return (char*)str;
@@ -188,7 +188,7 @@ static inline int output_time(midi_t * const midi, char * fname) {
 //this is a pretty inefficient way of doing this, but I don't really feel like making
 //the midi code "public" and using it mroe... besides this is easier anyway!
 
-static inline midi_track_t * find_track(midi_t * midi, const char const * part) {
+static inline midi_track_t * find_track(midi_t * midi, const char * part) {
     midi_track_t * track;
 
     for ( int i = 0; i < midi->hdr.tracks; ++i ) {
