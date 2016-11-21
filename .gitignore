@@ -31,3 +31,10 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Midi files
+*.mid*
+*.xml
+*.midi
+midi
+
