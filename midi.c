@@ -12,7 +12,7 @@ const uint8_t MIDI_TRACK_MAGIC[]  = { 'M', 'T', 'r', 'k' };
 
 static inline uint16_t btol_16(const uint16_t n)
 {
-    return (n >> 8) | (n << 8);
+    return ((n >> 8) | (n << 8));
 }
 
 static inline uint32_t btol_32(const uint32_t n)
@@ -88,8 +88,8 @@ void midi_close(midi_t *midi)
 }
 
 /**
- * Retrieve a MIDI track (midi_track_t*) including the track header. Suitable
- * for iteration with midi_iter_track.
+ * Retrieve a MIDI track (midi_track_t*) including the track header.
+ * Suitable for iteration with midi_iter_track.
  */
 midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
 {
@@ -160,7 +160,7 @@ void midi_free_track(midi_track_t *trk)
  */
 static bool midi_parse_hdr(midi_t *const midi)
 {
-    uint8_t buf[MIDI_HEADER_SIZE] = {0};
+    uint8_t buf[MIDI_HEADER_SIZE] = { 0 };
     midi_hdr_t *hdr = &midi->hdr;
     size_t ret = fread(buf, MIDI_HEADER_SIZE, 1, midi->midi_file);
 
@@ -172,7 +172,7 @@ static bool midi_parse_hdr(midi_t *const midi)
         return false;
     }
 
-    memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
+    memcpy(hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
     hdr->length   = btol_32(*(uint32_t*)(buf + MIDI_HEADER_LENGTH_OFFSET));
     hdr->format   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
     hdr->tracks   = btol_16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
@@ -183,7 +183,7 @@ static bool midi_parse_hdr(midi_t *const midi)
 
 static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr)
 {
-    uint8_t buf[MIDI_TRACK_HEADER_SIZE] = {0};
+    uint8_t buf[MIDI_TRACK_HEADER_SIZE] = { 0 };
     size_t ret = fread(buf, MIDI_TRACK_HEADER_SIZE, 1, midi->midi_file);
 
     if (ret != 1) {
@@ -358,7 +358,7 @@ static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const byte
     return delta_time;
 }
 
-void midi_printmeta(midi_event_t * meta)
+void midi_print_meta(midi_event_t * meta)
 {
     char str[meta->size + 1];
     str[meta->size] = '\0';
@@ -435,7 +435,7 @@ static void midi_prefix_errmsg(midi_t *const midi, const char *const errmsg, ...
     }
 }
 
-const char *midi_get_errstr(const midi_t *const midi)
+const char *midi_get_errmsg(const midi_t *const midi)
 {
     return midi->errmsg;
 }
@@ -447,5 +447,5 @@ int midi_get_errno(const midi_t *const midi)
 
 static bool midi_check_magic(const uint8_t *const expected, const uint8_t *const check, const size_t magic_size)
 {
-    return memcmp(check, expected, magic_size) == 0;
+    return (memcmp(check, expected, magic_size) == 0);
 }

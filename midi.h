@@ -136,30 +136,27 @@ typedef struct {
 } midi_event_t;
 
 
-typedef struct midi_event_node_s {
-    struct midi_event_node_s *next;
-    midi_event_t event;
+typedef struct midi_event_node {
+    struct midi_event_node *next;
+    midi_event_t            event;
 } midi_event_node_t;
 
 
 typedef struct {
     midi_track_hdr_t hdr;
-    uint32_t events;
-    uint8_t num;
-    midi_event_node_t *head;
-    midi_event_node_t *cur;
+    uint32_t            events; // Total count of events in a track chunk
+    uint8_t             num;    // No. of track
+    midi_event_node_t * head;
+    midi_event_node_t * cur;
 } midi_track_t;
 
 typedef struct {
-    midi_hdr_t hdr;
+    FILE *      midi_file;
+    midi_hdr_t  hdr;
+    uint8_t     trk_offset;     // Offset to first track.
 
     char errmsg[512];
     int errnum;
-
-    // Offset to first track.
-    uint8_t trk_offset;
-
-    FILE *midi_file;
 } midi_t;
 
 
@@ -171,18 +168,17 @@ void midi_free_track(midi_track_t *trk);
 /**
  * Track iteration
  */
-
 void midi_iter_track(midi_track_t *trk);
 bool midi_track_has_next(midi_track_t *trk);
 midi_event_t *midi_track_next(midi_track_t *trk);
 
 // Print a textual meta argument
-void midi_printmeta(midi_event_t *meta);
+void midi_print_meta(midi_event_t *meta);
 
 // Convert event->cmd to a string
 const char *midi_get_event_str(uint8_t cmd);
 
-const char *midi_get_errstr(const midi_t *const);
+const char *midi_get_errmsg(const midi_t *const);
 int midi_get_errno(const midi_t *const);
 
 
