@@ -374,7 +374,7 @@ static inline uint32_t midi_parse_delta_time(FILE *file, unsigned int *const byt
 #endif
         more = tmp[read] & 0x80;
         tmp[read] &= 0x7F;
-        delta_time |= (delta_time << 7) | tmp[read];
+        delta_time = (delta_time << 7) | tmp[read];
         read++;
     } while (more && read < 4);
 
