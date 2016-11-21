@@ -7,6 +7,8 @@
 
 #include "midi.h"
 
+#define DEBUG       1
+
 const uint8_t MIDI_HEADER_MAGIC[] = { 'M', 'T', 'h', 'd' };
 const uint8_t MIDI_TRACK_MAGIC[]  = { 'M', 'T', 'r', 'k' };
 
@@ -29,7 +31,7 @@ static void midi_prefix_errmsg(midi_t *, const char *const, ...);
 static bool midi_check_magic(const uint8_t *const, const uint8_t *const, const size_t);
 
 static inline midi_event_node_t * midi_parse_event(const midi_t *const, unsigned int * const bytes);
-static inline uint32_t midi_parse_timedelta(FILE * file, unsigned int * const bytes);
+static inline uint32_t midi_parse_delta_time(FILE * file, unsigned int * const bytes);
 
 /**
  * Open a midi file given by the midi_file parameter.
@@ -130,7 +132,6 @@ midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
             midi_free_track(track);
             track = NULL;
         }
-
     }
 
     return track;
@@ -147,7 +148,7 @@ void midi_free_track(midi_track_t *trk)
 
     trk->cur = trk->head;
     while (trk->cur != NULL) {
-        midi_event_node_t  *cur = trk->cur;
+        midi_event_node_t *cur = trk->cur;
         trk->cur = trk->cur->next;
         free(cur);
     }
@@ -192,7 +193,7 @@ static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr
         return false;
     }
 
-    memcpy(&hdr->magic, buf + MIDI_TRACK_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
+    memcpy(hdr->magic, buf + MIDI_TRACK_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
     hdr->size = btol_32(*(uint32_t*)(buf + MIDI_TRACK_HEADER_SIZE_OFFSET));
 
     if (!midi_check_magic(MIDI_TRACK_MAGIC, hdr->magic, sizeof(MIDI_TRACK_MAGIC))) {
@@ -233,6 +234,7 @@ static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk)
             node = node->next;
             trk->events++;
         } else {
+            // Something wrong
             return false;
         }
     }
@@ -245,18 +247,24 @@ static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk)
 static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsigned int *const bytes)
 {
     /**
-     * per midi format: sometimes events will not contain  a command byte
+     * Per midi format, sometimes events may not contain  a command byte
      * And in this case, the "running command" from the last command byte is used.
      */
     static uint8_t running_cmd = 0;
 
-    uint32_t delta_time = midi_parse_timedelta(midi->midi_file, bytes);
+#if DEBUG
+    printf("Event: ");
+#endif
+    uint32_t delta_time = midi_parse_delta_time(midi->midi_file, bytes);
 
     midi_event_node_t * node;
 
     uint8_t cmdchan = 0;
 
     *bytes += fread(&cmdchan, 1, 1, midi->midi_file);
+#if DEBUG
+    printf(" %02x", cmdchan);
+#endif
 
     // 0xFF = meta event.
     // TODO: split this out into a function for meta / event
@@ -268,6 +276,9 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
         // Skip the command.
         *bytes += fread(&cmd, 1, 1, midi->midi_file);
         *bytes += fread(&size, 1, 1, midi->midi_file);
+#if DEBUG
+        printf(" %02x %02x", cmd, size);
+#endif
 
         node = malloc((sizeof *node) + size);
         if (node == NULL) {
@@ -277,6 +288,11 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
         fread(node->event.data, size, 1, midi->midi_file);
         *bytes += size;
+#if DEBUG
+        for (int i = 0; i < size; i++) {
+            printf(" %02x", node->event.data[i]);
+        }
+#endif
 
         node->event.size = size;
         node->event.cmd = cmd;
@@ -285,6 +301,7 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
         node->event.type = MIDI_EVENT_TYPE_META;
 
     } else {
+
         uint8_t cmd = (cmdchan >> 4) & 0x0F;
         uint8_t chan = cmdchan & 0x0F;
         uint8_t args[2];
@@ -303,6 +320,9 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
             return NULL;
         }
 
+        /**
+         * Only 1 data bytes follow after these two event
+         */
         if (cmd == MIDI_EVENT_PROGRAM_CHANGE || cmd == MIDI_EVENT_CHANNEL_PRESSURE) {
             argn--;
         }
@@ -315,6 +335,9 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
         for ( ; argc < argn; ++argc ) {
             *bytes += fread(&args[argc], 1, 1, midi->midi_file);
+#if DEBUG
+            printf(" %02x", args[argc]);
+#endif
         }
 
         for (int i = 0; i < argn; ++i) {
@@ -329,13 +352,15 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
     }
 
     node->next = NULL;
+#if DEBUG
+    printf("\n");
+#endif
 
     return node;
 }
 
-static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const bytes)
+static inline uint32_t midi_parse_delta_time(FILE *file, unsigned int *const bytes)
 {
-
     uint8_t tmp[4] = { 0 };
     uint32_t delta_time = 0;
     int read = 0;
@@ -343,28 +368,37 @@ static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const byte
 
     do {
         fread(&tmp[read], 1, 1, file);
+#if DEBUG
+        printf(" %02x", tmp[read]);
+#endif
         more = tmp[read] & 0x80;
         tmp[read] &= 0x7F;
+        delta_time |= (delta_time << 7) | tmp[read];
         read++;
-    } while (more);
-
-    // Need read all the bytes first due to endianness
-    for (int i = 0; i < read; ++i) {
-        delta_time |= tmp[i] << ((read - 1 - i) * 7);
-    }
+    } while (more && read < 4);
 
     *bytes += read;
 
     return delta_time;
 }
 
-void midi_print_meta(midi_event_t * meta)
+void midi_print_event(midi_event_t * event)
 {
-    char str[meta->size + 1];
-    str[meta->size] = '\0';
-    strncpy(str, (const char *)meta->data, meta->size);
+    if (!event) {
+        return ;
+    }
 
-    printf("%s", str);
+    printf("delta_time: %05d, type: %d, cmd: %02x, chan: %02d, size: %d, data:",
+            event->delta_time,
+            event->type,
+            event->cmd,
+            event->chan,
+            event->size
+            );
+    for (int i = 0; i < event->size; i++) {
+        printf(" %02x", event->data[i]);
+    }
+    printf("\n");
 }
 
 static const char *event_str[] =

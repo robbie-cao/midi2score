@@ -143,7 +143,7 @@ typedef struct midi_event_node {
 
 
 typedef struct {
-    midi_track_hdr_t hdr;
+    midi_track_hdr_t    hdr;
     uint32_t            events; // Total count of events in a track chunk
     uint8_t             num;    // No. of track
     midi_event_node_t * head;
@@ -172,8 +172,9 @@ void midi_iter_track(midi_track_t *trk);
 bool midi_track_has_next(midi_track_t *trk);
 midi_event_t *midi_track_next(midi_track_t *trk);
 
-// Print a textual meta argument
-void midi_print_meta(midi_event_t *meta);
+// Print a textual parsed event
+void midi_print_event(midi_event_t *meta);
+void midi_print_event_raw(midi_event_t *meta);
 
 // Convert event->cmd to a string
 const char *midi_get_event_str(uint8_t cmd);
