@@ -354,6 +354,7 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
     node->next = NULL;
 #if DEBUG
     printf("\n");
+    midi_print_event(&node->event);
 #endif
 
     return node;
@@ -388,7 +389,7 @@ void midi_print_event(midi_event_t * event)
         return ;
     }
 
-    printf("delta_time: %05d, type: %d, cmd: %02x, chan: %02d, size: %d, data:",
+    printf("delta_time: %5d, type: %d, cmd: 0x%02x, chan: %2d, size: %2d, data:",
             event->delta_time,
             event->type,
             event->cmd,
