@@ -1,3 +1,6 @@
+#ifndef __MIDI_H__
+#define __MIDI_H__
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -195,3 +198,4 @@ int midi_get_errno(const midi_t *const);
 #define MIDI_EVENT_CHANNEL_AFTER_TOUCH      0x0D
 #define MIDI_EVENT_PITCH_WHEEL_CHANGE       0x0E
 
+#endif

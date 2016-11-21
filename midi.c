@@ -7,15 +7,17 @@
 
 #include "midi.h"
 
-const uint8_t MIDI_MAGIC[] = {'M','T','h','d'};
-const uint8_t MIDI_TRACK_MAGIC[] = {'M','T','r','k'};
+const uint8_t MIDI_HEADER_MAGIC[] = { 'M', 'T', 'h', 'd' };
+const uint8_t MIDI_TRACK_MAGIC[]  = { 'M', 'T', 'r', 'k' };
 
-static inline uint16_t btol16(const uint16_t n) {
+static inline uint16_t btol_16(const uint16_t n)
+{
     return (n>>8) | (n<<8);
 }
 
-static inline uint32_t btol32(const uint32_t n) {
-    return ((n>>24)&0xff) | ((n<<8)&0xff0000) | ((n>>8)&0xff00) |  ((n<<24)&0xff000000);
+static inline uint32_t btol_32(const uint32_t n)
+{
+    return ((n >> 24) & 0xff) | ((n << 8) & 0xff0000) | ((n >> 8) & 0xff00) |  ((n << 24) & 0xff000000);
 }
 
 static bool midi_parse_hdr(midi_t *const);
@@ -37,7 +39,8 @@ static inline uint32_t midi_parse_timedelta(FILE * file, unsigned int * const by
  *
  * On error, NULL is returned
  */
-int midi_open(const char *const midi_file, midi_t **midi) {
+int midi_open(const char *const midi_file, midi_t **midi)
+{
     FILE *file = NULL;
     *midi = NULL;
     int status;
@@ -73,7 +76,8 @@ int midi_open(const char *const midi_file, midi_t **midi) {
     }
 }
 
-void midi_close(midi_t *midi) {
+void midi_close(midi_t *midi)
+{
     if (midi != NULL && midi->midi_file != NULL) {
         fclose(midi->midi_file);
     }
@@ -85,7 +89,8 @@ void midi_close(midi_t *midi) {
  * Retrieve a MIDI track (midi_track_t*) including the track header. Suitable
  * for iteration with midi_iter_track.
  */
-midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx) {
+midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx)
+{
     int status;
     midi_track_t *track = NULL;
 
@@ -132,7 +137,8 @@ midi_track_t *midi_get_track(const midi_t *const midi, uint8_t track_idx) {
 /**
  * Free a track previously allocated with midi_get_track()
  */
-void midi_free_track(midi_track_t *trk) {
+void midi_free_track(midi_track_t *trk)
+{
     if (trk == NULL)
         return;
 
@@ -149,17 +155,18 @@ void midi_free_track(midi_track_t *trk) {
 /**
  * Read and parse the midi header from file into a midi_hdr_t structure.
  */
-static bool midi_parse_hdr(midi_t *const midi) {
+static bool midi_parse_hdr(midi_t *const midi)
+{
     uint8_t buf[MIDI_HEADER_SIZE] = {0};
     midi_hdr_t *hdr = &midi->hdr;
     size_t ret = fread(buf, MIDI_HEADER_SIZE, 1, midi->midi_file);
 
-    if (ret == 1 && midi_check_magic(MIDI_MAGIC, buf, sizeof(MIDI_MAGIC))) {
+    if (ret == 1 && midi_check_magic(MIDI_HEADER_MAGIC, buf, sizeof(MIDI_HEADER_MAGIC))) {
         memcpy(&hdr->magic, buf + MIDI_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-        hdr->length = btol32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
-        hdr->format = btol16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
-        hdr->tracks = btol16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
-        hdr->division = btol16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
+        hdr->length = btol_32(*(uint32_t*)(buf + MIDI_HEADER_HSIZE_OFFSET));
+        hdr->format = btol_16(*(uint16_t*)(buf + MIDI_HEADER_FORMAT_OFFSET));
+        hdr->tracks = btol_16(*(uint16_t*)(buf + MIDI_HEADER_TRACKS_OFFSET));
+        hdr->division = btol_16(*(uint16_t*)(buf + MIDI_HEADER_DD_OFFSET));
 
         return true;
     } else {
@@ -167,13 +174,14 @@ static bool midi_parse_hdr(midi_t *const midi) {
     }
 }
 
-static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr) {
+static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr)
+{
     uint8_t buf[MIDI_TRACK_HEADER_SIZE] = {0};
     size_t ret = fread(buf, MIDI_TRACK_HEADER_SIZE, 1, midi->midi_file);
 
     if (ret == 1) {
         memcpy(&hdr->magic, buf + MIDI_TRACK_HEADER_MAGIC_OFFSET, sizeof(hdr->magic));
-        hdr->size = btol32(*(uint32_t*)(buf + MIDI_TRACK_HEADER_SIZE_OFFSET));
+        hdr->size = btol_32(*(uint32_t*)(buf + MIDI_TRACK_HEADER_SIZE_OFFSET));
 
         if (midi_check_magic(MIDI_TRACK_MAGIC, hdr->magic, sizeof(MIDI_TRACK_MAGIC))) {
             return true;
@@ -188,7 +196,8 @@ static bool midi_parse_track_hdr(const midi_t *const midi, midi_track_hdr_t *hdr
     }
 }
 
-static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk) {
+static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk)
+{
     midi_event_node_t *node;
     bool parsed = midi_parse_track_hdr(midi, &trk->hdr);
 
@@ -226,7 +235,8 @@ static bool midi_parse_track(const midi_t *const midi, midi_track_t *trk) {
     return true;
 }
 
-static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsigned int *const bytes) {
+static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsigned int *const bytes)
+{
     /**
      * per midi format: sometimes events will not contain  a command byte
      * And in this case, the "running command" from the last command byte is used.
@@ -239,7 +249,7 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
     uint8_t cmdchan = 0;
 
-    *bytes += fread(&cmdchan, 1,1, midi->midi_file);
+    *bytes += fread(&cmdchan, 1, 1, midi->midi_file);
 
     //0xFF = meta event.
     ///@TODO split this out into a function for meta / event
@@ -249,8 +259,8 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
 
         //xx, nn, dd = command, length, data...
         //skip the command.
-        *bytes += fread(&cmd, 1,1, midi->midi_file);
-        *bytes += fread(&size, 1,1, midi->midi_file);
+        *bytes += fread(&cmd, 1, 1, midi->midi_file);
+        *bytes += fread(&size, 1, 1, midi->midi_file);
 
         node = malloc((sizeof *node) + size);
         if (node == NULL) {
@@ -314,7 +324,8 @@ static inline midi_event_node_t *midi_parse_event(const midi_t *const midi, unsi
     return node;
 }
 
-static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const bytes) {
+static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const bytes)
+{
 
     uint8_t tmp[4] = {0};
     uint32_t td = 0;
@@ -322,30 +333,33 @@ static inline uint32_t midi_parse_timedelta(FILE *file, unsigned int *const byte
     int read = 0;
     int more;
     do {
-        fread(&tmp[read],1,1, file);
+        fread(&tmp[read], 1, 1, file);
         more = tmp[read]&0x80;
         tmp[read] &= 0x7F;
         read++;
     } while (more);
 
     //need read all the bytes first due to endianness
-    for (int i = 0; i < read; ++i)
-        td |= tmp[i] << ((read-1-i) * 7);
+    for (int i = 0; i < read; ++i) {
+        td |= tmp[i] << ((read - 1 - i) * 7);
+    }
 
     *bytes += read;
 
     return td;
 }
 
-void midi_printmeta(midi_event_t * meta) {
-    char str[meta->size+1];
+void midi_printmeta(midi_event_t * meta)
+{
+    char str[meta->size + 1];
     str[meta->size] = '\0';
     strncpy(str, (const char *)meta->data, meta->size);
 
     printf("%s", str);
 }
 
-char *midi_get_eventstr(uint8_t cmd) {
+char *midi_get_eventstr(uint8_t cmd)
+{
     switch(cmd) {
         case 0x8:
             return "NoteOff";
@@ -367,21 +381,26 @@ char *midi_get_eventstr(uint8_t cmd) {
 }
 
 
-void midi_iter_track(midi_track_t *trk) {
+void midi_iter_track(midi_track_t *trk)
+{
     trk->cur = trk->head;
 }
 
-bool midi_track_has_next(midi_track_t *trk) {
+bool midi_track_has_next(midi_track_t *trk)
+{
     return trk->cur != NULL;
 }
 
-midi_event_t *midi_track_next(midi_track_t *trk) {
+midi_event_t *midi_track_next(midi_track_t *trk)
+{
     midi_event_node_t *cur = trk->cur;
     trk->cur = trk->cur->next;
+
     return &cur->event;
 }
 
-static void midi_set_error(midi_t *const midi, const int midi_errno, const char *const errmsg, ...) {
+static void midi_set_error(midi_t *const midi, const int midi_errno, const char *const errmsg, ...)
+{
     va_list ap;
     va_start(ap, errmsg);
     vsnprintf(midi->errmsg, sizeof(midi->errmsg), errmsg, ap);
@@ -389,7 +408,8 @@ static void midi_set_error(midi_t *const midi, const int midi_errno, const char 
     va_end(ap);
 }
 
-static void midi_prefix_errmsg(midi_t *const midi, const char *const errmsg, ...) {
+static void midi_prefix_errmsg(midi_t *const midi, const char *const errmsg, ...)
+{
     size_t size = sizeof(midi->errmsg);
     char old_errmsg[size];
     va_list ap;
@@ -402,18 +422,22 @@ static void midi_prefix_errmsg(midi_t *const midi, const char *const errmsg, ...
     bytes = vsnprintf(midi->errmsg, size, errmsg, ap);
     va_end(ap);
 
-    if ((size_t)bytes < size)
+    if ((size_t)bytes < size) {
         snprintf(&midi->errmsg[bytes], size - bytes, ": %s", old_errmsg);
+    }
 }
 
-const char *midi_get_errstr(const midi_t *const midi) {
+const char *midi_get_errstr(const midi_t *const midi)
+{
     return midi->errmsg;
 }
 
-int midi_get_errno(const midi_t *const midi) {
+int midi_get_errno(const midi_t *const midi)
+{
     return midi->errnum;
 }
 
-static bool midi_check_magic(const uint8_t *const expected, const uint8_t *const check, const size_t magic_size) {
+static bool midi_check_magic(const uint8_t *const expected, const uint8_t *const check, const size_t magic_size)
+{
     return memcmp(check, expected, magic_size) == 0;
 }
