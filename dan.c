@@ -53,7 +53,7 @@ int main(int argc, char**argv)
 
     char * midi_file;
     if (argc != 2 || strlen(argv[1]) < 1) {
-        char * invocation = (argc > 0) ? argv[0] : "./midi";
+        char * invocation = (argc > 0) ? argv[0] : "./dan";
         fprintf(stderr, "Usage: %s filename.mid\n\n", invocation);
         return 1;
     } else {
