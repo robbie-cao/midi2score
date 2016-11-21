@@ -180,7 +180,7 @@ midi_event_t *midi_track_next(midi_track_t *trk);
 void midi_printmeta(midi_event_t *meta);
 
 // Convert event->cmd to a string
-char *midi_get_eventstr(uint8_t cmd);
+const char *midi_get_event_str(uint8_t cmd);
 
 const char *midi_get_errstr(const midi_t *const);
 int midi_get_errno(const midi_t *const);

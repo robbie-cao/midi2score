@@ -367,26 +367,25 @@ void midi_printmeta(midi_event_t * meta)
     printf("%s", str);
 }
 
-char *midi_get_eventstr(uint8_t cmd)
+static const char *event_str[] =
 {
-    switch(cmd) {
-        case 0x8:
-            return "NoteOff";
-        case 0x9:
-            return "NoteOn";
-        case 0xa:
-            return "AfterTouch";
-        case 0xb:
-            return "ControlChange";
-        case 0xc:
-            return "ProgramChange";
-        case 0xd:
-            return "ChannelPressure";
-        case 0xe:
-            return "PitchWheel";
-        default:
-            return "???";
+    /* 0x08 */ "NoteOff",
+    /* 0x09 */ "NoteOn",
+    /* 0x0A */ "AfterTouch",
+    /* 0x0B */ "ControlChange",
+    /* 0x0C */ "ProgramChange",
+    /* 0x0D */ "ChannelPressure",
+    /* 0x0E */ "PitchWheel",
+    /* 0x0F */ "Meta",
+};
+
+const char *midi_get_event_str(uint8_t cmd)
+{
+    if (!(cmd & 0x08)) {
+        return "Invalid cmd";
     }
+
+    return event_str[cmd & 0x07];
 }
 
 
