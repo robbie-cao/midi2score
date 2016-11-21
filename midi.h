@@ -3,16 +3,61 @@
 #include <stdbool.h>
 
 /**
+ * http://cs.fit.edu/~ryan/cse4051/projects/midi/midi.html
+ *
+ * MIDI File Structure
+ *
+ * Chunks
+ *
+ * MIDI files are structured into chunks.
+ * Each chunk consists of:
+ *      - A 4-byte chunk type (ascii)
+ *      - A 4-byte length (32 bits, msb first)
+ *      - length bytes of data
+ *
+ * +---------+---------+--------------+
+ * | Type    | Length  | Data         |
+ * +---------+---------+--------------+
+ * | 4 bytes | 4 bytes | length bytes |
+ * +---------+---------+--------------+
+ *
+ * There are two types of chunks:
+ *      - Header Chunks - which have a chunk type of "MThd"
+ *      - Track Chunks  - which have a chunk type of "MTrk"
+ *
+ * A MIDI file consists of a single header chunk followed by one or more track chunks.
+ *
+ * Since the length-field is mandatory in the structure of chunks, it is possible to accomodate chunks
+ * other than "MThd" or "MTrk" in a MIDI file, by skipping over their contents. The MIDI specification
+ * requires that software be able to handle unexpected chunk-types by ignoring the entire chunk.
+ *
+ * +------+-------------------------------------------------+
+ * |      |                 <---Chunk--->                   |
+ * +------+-------+----------+------------------------------+
+ * |      | type  | length   | Data                         |
+ * +------+-------+----------+------------------------------+
+ * | MIDI | MThd  | 6        | <format> <tracks> <division> |
+ * |      +-------+----------+------------------------------+
+ * | File | MTrk  | <length> | <delta_time> <event> ...     |
+ * |      +-------+----------+------------------------------+
+ * | :    |                     :                           |
+ * |      +-------+----------+------------------------------+
+ * |      | MTrk  | <length> | <delta_time> <event> ...
+ * +------+-------+----------+------------------------------+
+ *
+ */
+
+/**
  * Header Chunk
- * +-----------------+-------------------------+----------------------------------+
- * | Chunk Type      | Length                  | Data                             |
- * +-----------------+-------------------------+----------------------------------+
- * | 4 bytes (ascii) | 4 bytes (32-bit binary) |    <-- length (= 6 bytes) -->    |
- * +                 |                         +----------+----------+------------+
- * |                 |                         | 16-bit   | 16-bit   | 16-bit     |
- * +-----------------+-------------------------+----------+----------+------------+
- * | MThd            | <length>                | <format> | <tracks> | <division> |
- * +-----------------+-------------------------+----------+----------+------------+
+ * +----------+-----------------+----------------------------------+
+ * | Type     | Length          | Data                             |
+ * +----------+-----------------+----------------------------------+
+ * | 4 bytes  | 4 bytes         |    <-- length (= 6 bytes) -->    |
+ * | (ascii)  | (32-bit binary) +----------+----------+------------+
+ * |          |                 | 16-bit   | 16-bit   | 16-bit     |
+ * +----------+-----------------+----------+----------+------------+
+ * | MThd     | <length>        | <format> | <tracks> | <division> |
+ * +----------+-----------------+----------+----------+------------+
  *
  * "MThd"   - the literal string MThd, or in hexadecimal notation: 0x4d546864.
  * <length> - length of the header chunk (always 6 bytes long).
