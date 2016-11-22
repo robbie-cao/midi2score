@@ -84,6 +84,24 @@ enum {
     KEY_SIGNATURE_MINOR_TOTAL
 };
 
+enum {
+    NOTE_LENGTH_HALF    = 0,
+    NOTE_LENGTH_QUARTER = 1,
+    NOTE_LENGTH_EIGHTH  = 2,
+    NOTE_LENGTH_16TH    = 3,
+
+    NOTE_LENGTH_WHOLE   = 4,
+};
+
+enum {
+    NOTE_LENGTH_1_2     = 0,
+    NOTE_LENGTH_1_4     = 1,
+    NOTE_LENGTH_1_8     = 2,
+    NOTE_LENGTH_1_16    = 3,
+
+    NOTE_LENGTH_1_1     = 4,
+};
+
 typedef struct {
     uint8_t type       : 3;
     uint8_t sub        : 3;
@@ -120,7 +138,9 @@ typedef struct {
     uint8_t octaves    : 2;     ///< octaves = (-(0b100 - 0bxx) % 0b100), 00 - current, 11 - above +1: 10 - above +2, 01 - below -1
 
     uint8_t oct2       : 1;     ///< extend to 8 octaves
+    uint8_t len2       : 1;     ///< length extend, 1 - whole, 0 - check defintion in length
     uint8_t dot        : 1;     ///< dot after the plain or underlined note works increases its length by half,
+    uint8_t rfu        : 1;
     uint8_t expression : 2;     ///< sign or mark used in music to denote a specific expressive quality
     uint8_t dynamics   : 2;     ///< p, f, mf, etc
 } Note_t;
@@ -156,6 +176,8 @@ typedef struct {
 uint8_t NumNotaiton_NoteToKeyNote(Note_t note);
 uint8_t NumNotaiton_NoteSimpToKeyNote(NoteSimplified_t note);
 
+Note_t NumNotaiton_KeyToNote(uint8_t key, uint8_t length, uint8_t dot);
+NoteSimplified_t NumNotaiton_KeyToNoteSimp(uint8_t key, uint8_t length);
 
 #endif /* __NOTATION_H__ */
 
