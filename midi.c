@@ -30,6 +30,7 @@ static void midi_prefix_errmsg(midi_t *, const char *const, ...);
 
 static bool midi_check_magic(const uint8_t *const, const uint8_t *const, const size_t);
 
+static uint16_t midi_parse_division(const midi_hdr_t *const);
 static inline midi_event_node_t * midi_parse_event(const midi_t *const, unsigned int * const bytes);
 static inline uint32_t midi_parse_delta_time(FILE * file, unsigned int * const bytes);
 
@@ -68,6 +69,8 @@ int midi_open(const char *const midi_file, midi_t **midi)
         return EINVAL;
     }
 
+    (*midi)->ppq = midi_parse_division(&((*midi)->hdr));
+
     // Just in case there are additional bytes in the header?
     status = fseek((*midi)->midi_file, (*midi)->hdr.length - (MIDI_HEADER_SIZE - 4 - 4), SEEK_CUR);
 
@@ -87,6 +90,67 @@ void midi_close(midi_t *midi)
     }
 
     free(midi);
+}
+
+/**
+ * <division> specifies the meaning of the delta-times.
+ * It has two formats, one for metrical time, and one for time-code-based time:
+ *      +------------+----+----------------+-------------+
+ *      | Bit:       | 15 | 14 ......... 8 | 7 ....... 0 |
+ *      +------------+----+----------------+-------------+
+ *      | <division> |  0 | ticks per quarter note       |
+ *      +            +----+----------------+-------------+
+ *      |            |  1 | -frames/second | ticks/frame |
+ *      +------------+----+----------------+-------------+
+ *
+ * If bit 15 of <division> is zero, the bits 14 thru 0 represent the number of delta time "ticks" which make up a quarter-note.
+ * For instance, if division is 96, then a time interval of an eighth-note between two events in the file would be 48.
+ *
+ * If bit 15 of <division> is a one, delta times in a file correspond to subdivisions of a second,
+ * in a way consistent with SMPTE and MIDI Time Code.
+ *
+ * Bits 14 thru 8 contain one of the four values -24, -25, -29, or -30, corresponding to the four standard SMPTE and MIDI Time Code formats,
+ * and represents the number of frames per second.
+ *
+ *    -24 = 24 frames per second
+ *    -25 = 25 frames per second
+ *    -29 = 30 frames per second, drop frame
+ *    -30 = 30 frames per second, non-drop frame
+ *
+ * The second byte (stored positive) is the resolution within a frame: typical values may be 4 (MIDI Time Code resolution), 8, 10, 80 (bit resolution), or 100.
+ * This stream allows exact specifications of time-code-based tracks, but also allows millisecond-based tracks by specifying 25 frames/sec and a resolution of 40 units per frame.
+ *
+ * Reference:
+ * - https://en.wikipedia.org/wiki/MIDI_timecode
+ * - http://www.electronics.dit.ie/staff/tscarff/Music_technology/midi/MTC.htm
+ * - http://www.harfesoft.de/aixphysik/sound/midi/pages/miditmcn.html
+ * - http://bradthemad.org/guitar/tempo_explanation.php
+ * - https://books.google.com/books?id=EodFbML75fkC&pg=PA56
+ */
+static uint16_t midi_parse_division(const midi_hdr_t *const hdr)
+{
+
+    // Metrical timing
+	if ((hdr->division & 0x8000) == 0) {
+        return (hdr->division & 0x7FFF);
+	}
+
+    // SMPTE and MIDI Time Code
+    int8_t fps = (int8_t)((hdr->division >> 8) & 0xFF);
+
+    switch (fps) {
+        case -24:
+        case -25:
+            return ((int16_t)(-fps) * (hdr->division & 0x7F));
+        case -29:
+        case -30:
+            return (30 * (hdr->division & 0x7F));
+        default:
+            // Invalid
+            break;
+    }
+
+    return 0;
 }
 
 /**

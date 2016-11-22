@@ -74,7 +74,7 @@
  *      | Bit:       | 15 | 14 ......... 8 | 7 ....... 0 |
  *      +------------+----+----------------+-------------+
  *      | <division> |  0 | ticks per quarter note       |
- *      +------------+----+----------------+-------------+
+ *      +            +----+----------------+-------------+
  *      |            |  1 | -frames/second | ticks/frame |
  *      +------------+----+----------------+-------------+
  *
@@ -154,6 +154,7 @@ typedef struct {
     FILE *      midi_file;
     midi_hdr_t  hdr;
     uint8_t     trk_offset;     // Offset to first track
+    uint16_t    ppq;            // Pulse(ticks) per quarternote / units per beat, unit of time for delta timing
 
     char errmsg[512];
     int errnum;
