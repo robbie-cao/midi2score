@@ -1,6 +1,10 @@
 #ifndef __NOTATION_H__
 #define __NOTATION_H__
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+
 /**
  * <b>Numbered Musical Notation</b><br>
  *
