@@ -7,7 +7,7 @@
 
 #include "midi.h"
 
-#define DEBUG       1
+#define DEBUG       0
 
 const uint8_t MIDI_HEADER_MAGIC[] = { 'M', 'T', 'h', 'd' };
 const uint8_t MIDI_TRACK_MAGIC[]  = { 'M', 'T', 'r', 'k' };
@@ -459,7 +459,7 @@ void midi_print_info(midi_t *midi)
 
     printf("Midi info:\n");
     midi_print_header(&midi->hdr);
-    printf("PPQ (ticks per quarternote): %d", midi->ppq);
+    printf("PPQ (ticks per quarternote): %d\n", midi->ppq);
 
     midi_track_t * track;
 
@@ -474,9 +474,9 @@ void midi_print_info(midi_t *midi)
 
 void midi_print_track(midi_track_t *trk)
 {
-    printf("Track %d - magic: %s, events: %4d, size: %6u bytes\n",
+    printf("Track %d - magic: %c%c%c%c, events: %4d, size: %6u bytes\n",
             trk->num,
-            trk->hdr.magic,
+            trk->hdr.magic[0], trk->hdr.magic[1], trk->hdr.magic[2], trk->hdr.magic[3],
             trk->events,
             trk->hdr.size);
 }
@@ -487,8 +487,8 @@ void midi_print_header(midi_hdr_t *hdr)
         return ;
     }
 
-    printf("Header - magic: %s, length: %d, format: %d, tracks: %d, division: 0x%04x\n",
-            hdr->magic,
+    printf("Header - magic: %c%c%c%c, length: %d, format: %d, tracks: %d, division: 0x%04x\n",
+            hdr->magic[0], hdr->magic[1], hdr->magic[2], hdr->magic[3],
             hdr->length,
             hdr->format,
             hdr->tracks,
