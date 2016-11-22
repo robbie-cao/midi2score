@@ -153,12 +153,37 @@ typedef struct {
 typedef struct {
     FILE *      midi_file;
     midi_hdr_t  hdr;
-    uint8_t     trk_offset;     // Offset to first track.
+    uint8_t     trk_offset;     // Offset to first track
 
     char errmsg[512];
     int errnum;
 } midi_t;
 
+/**
+ * Usage Sample:
+ *
+ * midi_t *midi;
+ * midi_track_t *track;
+ *
+ * midi_open(midi_file_name, midi);
+ *
+ * for (int i = 0; i < midi->hdr.tracks; ++i) {
+ *     track =  midi_get_track(midi, i);
+ *
+ *     midi_iter_track(track);
+ *     midi_event_t * evnt;
+ *     while (midi_track_has_next(track)) {
+ *         evnt = midi_track_next(track);
+ *         // Do something
+ *     }
+ *
+ *     if (track != NULL) {
+ *         midi_free_track(track);
+ *     }
+ * }
+ *
+ * midi_close(midi);
+ */
 
 int midi_open(const char *const midi_file, midi_t **);
 void midi_close(midi_t *midi);
@@ -172,9 +197,11 @@ void midi_iter_track(midi_track_t *trk);
 bool midi_track_has_next(midi_track_t *trk);
 midi_event_t *midi_track_next(midi_track_t *trk);
 
+/**
+ * Helper functions
+ */
 // Print a textual parsed event
-void midi_print_event(midi_event_t *meta);
-void midi_print_event_raw(midi_event_t *meta);
+void midi_print_event(midi_event_t *event);
 
 // Convert event->cmd to a string
 const char *midi_get_event_str(uint8_t cmd);
