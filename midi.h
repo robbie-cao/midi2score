@@ -201,6 +201,11 @@ midi_event_t *midi_track_next(midi_track_t *trk);
 /**
  * Helper functions
  */
+void midi_print_info(midi_t *midi);
+// Print header
+void midi_print_header(midi_hdr_t *hdr);
+// Print track
+void midi_print_track(midi_track_t *trk);
 // Print a textual parsed event
 void midi_print_event(midi_event_t *event);
 

@@ -135,6 +135,10 @@ static uint16_t midi_parse_division(const midi_hdr_t *const hdr)
         return (hdr->division & 0x7FFF);
 	}
 
+    //
+    // !!! NOT TESTED !!!
+    // TODO
+    //
     // SMPTE and MIDI Time Code
     int8_t fps = (int8_t)((hdr->division >> 8) & 0xFF);
 
@@ -445,6 +449,50 @@ static inline uint32_t midi_parse_delta_time(FILE *file, unsigned int *const byt
     *bytes += read;
 
     return delta_time;
+}
+
+void midi_print_info(midi_t *midi)
+{
+    if (!midi) {
+        return ;
+    }
+
+    printf("Midi info:\n");
+    midi_print_header(&midi->hdr);
+    printf("PPQ (ticks per quarternote): %d", midi->ppq);
+
+    midi_track_t * track;
+
+    for (int i = 0; i < midi->hdr.tracks; ++i) {
+        track =  midi_get_track(midi, i);
+        midi_print_track(track);
+        if (track != NULL) {
+            midi_free_track(track);
+        }
+    }
+}
+
+void midi_print_track(midi_track_t *trk)
+{
+    printf("Track %d - magic: %s, events: %4d, size: %6u bytes\n",
+            trk->num,
+            trk->hdr.magic,
+            trk->events,
+            trk->hdr.size);
+}
+
+void midi_print_header(midi_hdr_t *hdr)
+{
+    if (!hdr) {
+        return ;
+    }
+
+    printf("Header - magic: %s, length: %d, format: %d, tracks: %d, division: 0x%04x\n",
+            hdr->magic,
+            hdr->length,
+            hdr->format,
+            hdr->tracks,
+            hdr->division);
 }
 
 void midi_print_event(midi_event_t * event)
