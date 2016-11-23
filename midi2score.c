@@ -1,34 +1,73 @@
+#include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <errno.h>
 
 #include "note.h"
 #include "key.h"
 #include "midi.h"
 
 /**
- * +----------------+
- * | header         |   -> ppq (pulse(ticks) per quarternote
- * |                |
- * +----------------+
- * | track 0        |   -> tempo
- * |                |   -> time signature
- * |                |   -> key signature
- * |                |
- * +----------------+
- * | track 1        |   -> note 1 with note / sharp / octaves / length
- * |                |   -> note 2 with note / sharp / octaves / length
- * |                |   -> :
- * |                |   -> :
- * |                |
- * |                |
- * |                |
- * |                |
- * |                |
- * |                |
- * +----------------+
+ * MIDI File:
+ *
+ *      +----------------+
+ *      | header         |   -> ppq (pulse(ticks) per quarternote
+ *      |                |
+ *      +----------------+
+ *      | track 0        |   -> tempo
+ *      |                |   -> time signature
+ *      |                |   -> key signature
+ *      |                |
+ *      +----------------+
+ *      | track 1        |   -> note 1 with note / sharp / octaves / length
+ *      |                |   -> note 2 with note / sharp / octaves / length
+ *      |                |   -> :
+ *      |                |   -> :
+ *      |                |
+ *      |                |
+ *      |                |
+ *      |                |
+ *      |                |
+ *      |                |
+ *      +----------------+
+ *
+ * Score File:
+ *
+ * Byte 0           1           2           3           4
+ *      +-----------+-----------+-----------+-----------+
+ *    0 |     M     |     S     |     S     |     C     |
+ *      +-----------+-----------+-----------+-----------+
+ *    4 | Clef      | Key Sign  | Time Sign | Reserved  |
+ *      +-----------+-----------+-----------+-----------+
+ *    8 | Size(MSB) | Size(LSB) | Reserved  | Reserved  |
+ *      +-----------+-----------+-----------+-----------+
+ *   12 | Note 1    | Note 1    | Note 2    | Note 3    |
+ *      +-----------+-----------+-----------+-----------+
+ *      | ....      | ....      | ....      | ....      |
+ *      | ....      | ....      | ....      | ....      |
+ *      | ....      | ....      | ....      | ....      |
+ *      | ....      | ....      |           |           |
+ *      |           |           |           |           |
+ *      |           |           |           |           |
+ *      +-----------+-----------+-----------+-----------+
  */
+
+#define SCORE_OFFSET_MAGIC          0
+#define SCORE_OFFSET_SIGNATURE      4
+#define SCORE_OFFSET_SIZE           8
+#define SCORE_OFFSET_DATA           12
 
 static uint16_t ppq = 960;
 static uint32_t tempo = 500000;     // 0x07A120
+
+
+static uint8_t score[512];
+
+static Clef_t            clef = { 0, 0, 0};
+static KeySignature_t    ks   = { 0, 0 };
+static TimeSignature_t   ts   = { 4, 2 };   // 4 / 4
 
 #define FRACTION_TOLERANCE          0.40
 
@@ -72,6 +111,7 @@ int midi_to_score(char * midi_file)
     uint8_t trk_no = 0;
     uint32_t delta_time = 0;
     uint32_t count = 0;
+    uint32_t position = 0;
     int status;
 
     status = midi_open(midi_file, &midi);
@@ -133,6 +173,8 @@ int midi_to_score(char * midi_file)
                     case MIDI_META_TIME_SIGNATURE:
                         // Time Signature
                         // FF 58 04 nn dd cc bb
+                        ts.upper = event->data[0];
+                        ts.lower = event->data[1];
                         printf("Time Signature: %d/%d\n", event->data[0], 1 << event->data[1]);
                         break;
                     case MIDI_META_KEY_SIGNATURE:
@@ -145,6 +187,8 @@ int midi_to_score(char * midi_file)
                         // sf =  7 : 7 sharps
                         // mi =  0 : major key
                         // mi =  1 : minor key
+                        ks.signature = event->data[0];
+                        ks.scale = event->data[1];
                         break;
                     default:
                         break;
@@ -152,6 +196,19 @@ int midi_to_score(char * midi_file)
         }
         midi_free_track(track);
     }
+
+    // Magic
+    score[0] = 'M';
+    score[1] = 'S';
+    score[2] = 'S';
+    score[3] = 'C';
+    // Header
+    score[4] = *(uint8_t *)&clef;
+    score[5] = *(uint8_t *)&ks;
+    score[6] = *(uint8_t *)&ts;
+    score[7] = 0;
+
+    position = SCORE_OFFSET_DATA;
 
     // MIDI event -> score notes
     //
@@ -176,6 +233,8 @@ int midi_to_score(char * midi_file)
                 delta_time += event->delta_time;
                 note = NumNotaiton_KeyToNoteSimp(event->data[0], midi_delta_time_to_length(delta_time, ppq));
                 count += 1;
+                score[position] = *(uint8_t *)&note;
+                position += 1;
                 printf("Note - note: %d, sharp: %d, length: %d, octaves: %d\n", note.note, note.sharp, note.length, note.octaves);
                 break;
             case MIDI_EVENT_NOTE_ON:
@@ -191,7 +250,6 @@ int midi_to_score(char * midi_file)
         }
     }
     midi_free_track(track);
-    printf("Total count of notes: %d\n", count);
 
     // Parse the remained tracks
     for (; trk_no < midi->hdr.tracks; trk_no++) {
@@ -207,6 +265,23 @@ int midi_to_score(char * midi_file)
         if (track != NULL) {
             midi_free_track(track);
         }
+    }
+
+    printf("Total count of notes: %d\n", count);
+    score[8] = (count >> 8) & 0xFF;
+    score[9] = count & 0xFF;
+    score[10] = 0;
+    score[11] = 0;
+
+    // Write score to file
+    char file_name[128];
+    FILE *fp = NULL;
+
+    snprintf(file_name, sizeof(file_name), "%s.ssc", midi_file);
+    fp = fopen(file_name, "wb");
+    if (fp) {
+        fwrite(score, sizeof(score), 1, fp);
+        fclose(fp);
     }
 
 cleanup:
