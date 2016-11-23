@@ -2,7 +2,7 @@ all: target
 FORCE: ;
 .PHONY: FORCE
 
-program= dan midi-dump
+program= dan midi-dump midi2score
 
 target: $(program)
 
@@ -23,6 +23,9 @@ dan: midi.o dan.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
 midi-dump: midi.o midi-dump.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+midi2score: midi2score.o midi.o note.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
 clean:
