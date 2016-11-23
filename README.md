@@ -2,6 +2,51 @@
 
 Translate midi file to score
 
+```
+MIDI File:
+
+     +----------------+
+     | header         |   -> ppq (pulse(ticks) per quarternote
+     |                |
+     +----------------+
+     | track 0        |   -> tempo
+     |                |   -> time signature
+     |                |   -> key signature
+     |                |
+     +----------------+
+     | track 1        |   -> note 1 with note / sharp / octaves / length
+     |                |   -> note 2 with note / sharp / octaves / length
+     |                |   -> :
+     |                |   -> :
+     |                |
+     |                |
+     |                |
+     |                |
+     |                |
+     |                |
+     +----------------+
+
+Score File:
+
+Byte 0           1           2           3           4
+     +-----------+-----------+-----------+-----------+
+   0 |     M     |     S     |     S     |     C     |
+     +-----------+-----------+-----------+-----------+
+   4 | Clef      | Key Sign  | Time Sign | Reserved  |
+     +-----------+-----------+-----------+-----------+
+   8 | Size(MSB) | Size(LSB) | Reserved  | Reserved  |
+     +-----------+-----------+-----------+-----------+
+  12 | Note 1    | Note 1    | Note 2    | Note 3    |
+     +-----------+-----------+-----------+-----------+
+     | ....      | ....      | ....      | ....      |
+     | ....      | ....      | ....      | ....      |
+     | ....      | ....      | ....      | ....      |
+     | ....      | ....      |           |           |
+     |           |           |           |           |
+     |           |           |           |           |
+     +-----------+-----------+-----------+-----------+
+```
+
 ## Reference
 
 - https://www.midi.org
