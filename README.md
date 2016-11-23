@@ -1,6 +1,8 @@
 # midi2score
 
-Translate midi file to score
+Translate midi file to score.
+
+## File Format
 
 ```
 MIDI File:
@@ -45,6 +47,37 @@ Byte 0           1           2           3           4
      |           |           |           |           |
      |           |           |           |           |
      +-----------+-----------+-----------+-----------+
+```
+
+## API Usage
+
+```
+Usage Sample:
+
+void foo()
+{
+    midi_t *midi;
+    midi_track_t *track;
+
+    midi_open(midi_file_name, midi);
+
+    for (int i = 0; i < midi->hdr.tracks; ++i) {
+        track =  midi_get_track(midi, i);
+
+        midi_iter_track(track);
+        midi_event_t * event;
+        while (midi_track_has_next(track)) {
+            event = midi_track_next(track);
+            // Do something
+        }
+
+        if (track != NULL) {
+            midi_free_track(track);
+        }
+    }
+
+    midi_close(midi);
+}
 ```
 
 ## Reference

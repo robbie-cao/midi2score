@@ -172,9 +172,9 @@ typedef struct {
  *     track =  midi_get_track(midi, i);
  *
  *     midi_iter_track(track);
- *     midi_event_t * evnt;
+ *     midi_event_t * event;
  *     while (midi_track_has_next(track)) {
- *         evnt = midi_track_next(track);
+ *         event = midi_track_next(track);
  *         // Do something
  *     }
  *
