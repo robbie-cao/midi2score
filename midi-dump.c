@@ -32,27 +32,7 @@ static int midi_dump(char * midi_file)
         return 1;
     }
 
-    midi_track_t * track;
-
-    for (int i = 0; i < midi->hdr.tracks; ++i) {
-        track =  midi_get_track(midi, i);
-
-        printf("Track %d, %d events, %u bytes, sig: %c%c%c%c\n",
-                track->num, track->events, track->hdr.size,
-                track->hdr.magic[0], track->hdr.magic[1], track->hdr.magic[2], track->hdr.magic[3]);
-
-        midi_iter_track(track);
-        midi_event_t * evnt;
-        while (midi_track_has_next(track)) {
-            evnt = midi_track_next(track);
-
-            // Do something
-        }
-
-        if (track != NULL) {
-            midi_free_track(track);
-        }
-    }
+    midi_print_info(midi);
 
     midi_close(midi);
 
